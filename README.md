@@ -1,96 +1,138 @@
-# GolfTracker
+# Golf Tracker
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+A full-stack golf round tracker — built as an Nx monorepo with a NestJS REST API and a React SPA.
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
-
-[Learn more about this workspace setup and its capabilities](https://nx.dev/getting-started/intro#learn-nx?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
-
-## Run tasks
-
-To run tasks with Nx use:
-
-```sh
-npx nx <target> <project-name>
+```
+golf-tracker/
+├── api/              # NestJS REST API   → port 3001
+├── web/              # React SPA         → port 3000
+├── nx.json           # Nx workspace configuration
+├── package.json      # Root dependencies & scripts
+└── tsconfig.base.json
 ```
 
-For example:
+## Tech Stack
 
-```sh
-npx nx build myproject
+### Backend — `api/`
+
+- [NestJS](https://nestjs.com/) — REST API framework
+- [TypeORM](https://typeorm.io/) — ORM with migration support
+- [PostgreSQL](https://www.postgresql.org/) — relational database
+- TypeScript — language
+- Jest — unit testing
+
+### Frontend — `web/`
+
+- [React 19](https://react.dev/) — UI framework
+- [Vite](https://vitejs.dev/) — build tool & dev server
+- [TanStack React Query](https://tanstack.com/query) — server state & caching
+- [React Router v6](https://reactrouter.com/) — client-side routing
+- [React Hook Form](https://react-hook-form.com/) — form state management
+- [Zod](https://zod.dev/) — schema validation
+- [Tailwind CSS](https://tailwindcss.com/) — utility-first styling
+- Vitest — unit testing
+- Playwright — e2e testing
+
+## Prerequisites
+
+- [Node.js](https://nodejs.org/) (recent LTS)
+- [PostgreSQL](https://www.postgresql.org/download/) installed and running locally
+- [Nest CLI](https://docs.nestjs.com/cli/overview): `npm install -g @nestjs/cli`
+
+## First-Time Setup
+
+1. **Clone and install dependencies** (installed at the workspace root — this is an Nx integrated monorepo, so there's a single `package.json` at the root, not one per app):
+
+   ```bash
+   git clone <repo-url> golf-tracker
+   cd golf-tracker
+   npm install --legacy-peer-deps
+   ```
+
+   > `--legacy-peer-deps` is required due to a peer-dependency version mismatch between `typeorm` and `ts-node` pulled in by Nx's jest tooling. This is also set permanently via the repo's `.npmrc`.
+
+2. **Create the database:**
+
+   ```bash
+   psql postgres
+   ```
+
+   ```sql
+   CREATE DATABASE golf_tracker;
+   \q
+   ```
+
+3. **Configure environment variables** — create `api/.env`:
+
+   ```dotenv
+   DB_HOST=localhost
+   DB_PORT=5432
+   DB_USERNAME=<your_postgres_user>
+   DB_PASSWORD=
+   DB_NAME=golf_tracker
+   JWT_SECRET=your-super-secret-key
+   PORT=3001
+   ```
+
+4. **Run migrations** to build out the schema:
+   ```bash
+   npm run migration:run
+   ```
+
+## Running the App
+
+```bash
+# Start both api and web concurrently
+npm run dev
+
+# Or start individually
+npm run api        # NestJS backend, http://localhost:3001
+npm run web         # Vite dev server, http://localhost:3000
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+The `web` Vite dev server proxies `/api/*` requests to `http://localhost:3001`, so frontend and backend can be developed together without CORS issues.
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+## Database Migrations
 
-## Add new projects
+Migrations are managed via a standalone TypeORM `DataSource` (`api/src/datasource.ts`), separate from the Nest app's `TypeOrmModule` connection — the CLI runs outside Nest's dependency injection, so it needs its own connection config sourced directly from `.env` via `dotenv`.
 
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
-
-To install a new plugin you can use the `nx add` command. Here's an example of adding the React plugin:
-```sh
-npx nx add @nx/react
+```bash
+npm run migration:generate   # scaffold a new migration by diffing entities against the DB
+npm run migration:run        # apply pending migrations
+npm run migration:revert     # roll back the last migration
 ```
 
-Use the plugin's generator to create new projects. For example, to create a new React app or library:
+## Project Structure
 
-```sh
-# Generate an app
-npx nx g @nx/react:app demo
+```
+api/
+├── src/
+│   ├── main.ts                          # bootstrap — listens on port 3001
+│   ├── datasource.ts                    # standalone TypeORM config, used by the CLI
+│   ├── app/
+│   │   ├── app.module.ts                # root module — Config + TypeORM wiring
+│   │   └── modules/
+│   │       └── rounds/
+│   │           ├── rounds.controller.ts
+│   │           ├── rounds.service.ts
+│   │           ├── rounds.module.ts
+│   │           ├── entities/
+│   │           └── dto/
+│   └── migrations/                      # generated TypeORM migrations
+└── .env                                  # DB credentials & JWT secret (not committed)
 
-# Generate a library
-npx nx g @nx/react:lib some-lib
+web/
+├── src/
+│   ├── main.tsx                         # entry point
+│   ├── router.tsx                       # route definitions
+│   ├── features/                        # feature-based pages/components
+│   ├── components/                      # reusable UI
+│   └── lib/                             # API client, query client, schemas
+└── vite.config.ts                       # dev proxy: /api/* → localhost:3001
 ```
 
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
+## Notes
 
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Set up CI!
-
-### Step 1
-
-To connect to Nx Cloud, run the following command:
-
-```sh
-npx nx connect
-```
-
-Connecting to Nx Cloud ensures a [fast and scalable CI](https://nx.dev/ci/intro/why-nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
-
-- [Remote caching](https://nx.dev/ci/features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/ci/features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/ci/features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/ci/features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-### Step 2
-
-Use the following command to configure a CI workflow for your workspace:
-
-```sh
-npx nx g ci-workflow
-```
-
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Install Nx Console
-
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
-
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Useful links
-
-Learn more:
-
-- [Learn more about this workspace setup](https://nx.dev/getting-started/intro#learn-nx?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+- `.env` is gitignored — never commit real credentials.
+- `.npmrc` (with `legacy-peer-deps=true`) is committed, since it's shared project config, not a secret.
+- `synchronize` is set to `false` in both the app's TypeORM config and `datasource.ts` — schema changes always go through migrations, never auto-sync.
