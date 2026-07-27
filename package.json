@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
+    "api": "nx serve api",
+    "web": "nx serve web",
+    "dev": "nx run-many --target=serve --projects=api,web --parallel",
     "migration:generate": "typeorm-ts-node-commonjs migration:generate -d api/src/datasource.ts",
     "migration:run": "typeorm-ts-node-commonjs migration:run -d api/src/datasource.ts",
     "migration:revert": "typeorm-ts-node-commonjs migration:revert -d api/src/datasource.ts"
