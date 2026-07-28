@@ -6,9 +6,9 @@
     "api": "nx serve api",
     "web": "nx serve web",
     "dev": "nx run-many --target=serve --projects=api,web --parallel",
-    "migration:generate": "typeorm-ts-node-commonjs migration:generate -d api/src/datasource.ts",
-    "migration:run": "typeorm-ts-node-commonjs migration:run -d api/src/datasource.ts",
-    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d api/src/datasource.ts"
+    "migration:generate": "TS_NODE_PROJECT=api/tsconfig.json typeorm-ts-node-commonjs migration:generate -d api/src/datasource.ts",
+    "migration:run": "TS_NODE_PROJECT=api/tsconfig.json typeorm-ts-node-commonjs migration:run -d api/src/datasource.ts",
+    "migration:revert": "TS_NODE_PROJECT=api/tsconfig.json typeorm-ts-node-commonjs migration:revert -d api/src/datasource.ts"
   },
   "private": true,
   "devDependencies": {
@@ -79,6 +79,8 @@
     "@nestjs/typeorm": "^11.0.3",
     "@tanstack/react-query": "^5.101.4",
     "axios": "^1.6.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
     "dotenv": "^17.4.2",
     "pg": "^8.22.0",
     "react": "^19.0.0",
